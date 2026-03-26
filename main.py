@@ -1,28 +1,19 @@
 import re
 from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    CallbackQueryHandler,
-    filters,
-    ConversationHandler,
+    Application, CommandHandler, MessageHandler,
+    CallbackQueryHandler, filters, ConversationHandler,
 )
 from config import (
     TELEGRAM_BOT_TOKEN,
-    CHOOSING_MODE,
-    WAITING_FOR_RESUME_ATS,
-    WAITING_FOR_JD,
-    WAITING_FOR_RESUME_IMP,
+    CHOOSING_MODE, WAITING_FOR_RESUME_ATS, WAITING_FOR_JD,
+    WAITING_FOR_RESUME_IMP, ASKING_TO_CHAT, IN_CHAT_MODE,
     logger,
 )
 from bot_handlers import (
-    start_conversation,
-    start_command,
-    cancel,
+    start_conversation, start_command, cancel, end_chat,
     choose_mode,
-    handle_resume_ats,
-    handle_jd,
-    handle_resume_improve,
+    handle_resume_ats, handle_jd,
+    handle_resume_improve, handle_ask_to_chat, handle_chat,
 )
 
 
@@ -35,12 +26,12 @@ def main() -> None:
             CommandHandler("start", start_command),
         ],
         states={
-            # ── Mode selection via inline buttons ──────────────────────────
+            # ── Mode selection ─────────────────────────────────────────────
             CHOOSING_MODE: [
                 CallbackQueryHandler(choose_mode, pattern="^mode_"),
             ],
 
-            # ── ATS Analysis flow ──────────────────────────────────────────
+            # ── ATS Analysis ───────────────────────────────────────────────
             WAITING_FOR_RESUME_ATS: [
                 MessageHandler(filters.Document.ALL, handle_resume_ats),
                 MessageHandler(
@@ -56,7 +47,7 @@ def main() -> None:
                 ),
             ],
 
-            # ── Resume Improvement flow ────────────────────────────────────
+            # ── Resume Improvement ─────────────────────────────────────────
             WAITING_FOR_RESUME_IMP: [
                 MessageHandler(filters.Document.ALL, handle_resume_improve),
                 MessageHandler(
@@ -64,12 +55,28 @@ def main() -> None:
                     handle_resume_improve
                 ),
             ],
+
+            # ── After improvement: offer career coach chat ─────────────────
+            ASKING_TO_CHAT: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    handle_ask_to_chat
+                ),
+            ],
+
+            # ── Career Coach Conversation Mode ─────────────────────────────
+            IN_CHAT_MODE: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    handle_chat
+                ),
+            ],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
-            MessageHandler(filters.Regex(re.compile(r'(?i)cancel')), cancel),
+            CommandHandler("end", end_chat),
+            MessageHandler(filters.Regex(re.compile(r'(?i)^cancel$')), cancel),
         ],
-        # Allow re-entry if user sends "Hi DrCode" again mid-session
         allow_reentry=True,
     )
 
