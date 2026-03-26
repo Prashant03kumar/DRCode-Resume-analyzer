@@ -190,6 +190,32 @@ async def end_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 
+async def handle_signoff(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handles 'signoff' keyword — graceful goodbye from anywhere."""
+    context.user_data.clear()
+    await update.message.reply_text(
+        "🤝 *Signing off — DrCode HireAi*\n\n"
+        "It was an honour coaching you today! 🏆\n"
+        "Go get that dream job — you've got this! 🚀\n\n"
+        "_Whenever you need me again, just type_ *Hi DrCode*.",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    return ConversationHandler.END
+
+
+async def handle_unknown_outside(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Catches ALL random messages when no conversation session is active."""
+    await update.message.reply_text(
+        "🤖 *Hey there!*\n\n"
+        "Looks like you haven't started a session yet.\n\n"
+        "Type *Hi DrCode* to begin and I'll help you:\n"
+        "• 🎯 Analyze your resume against a Job Description *(ATS Mode)*\n"
+        "• ✨ Improve your resume professionally *(Improve Mode)*\n\n"
+        "_Just say_ *Hi DrCode* _to get started!_ 🚀",
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Mode Selection
 # ─────────────────────────────────────────────────────────────────────────────
@@ -217,6 +243,18 @@ async def choose_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         )
         return WAITING_FOR_RESUME_IMP
 
+    return CHOOSING_MODE
+
+
+async def handle_random_in_mode_select(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Fires when user types random text instead of pressing mode buttons."""
+    await update.message.reply_text(
+        "⬆️ Please choose a mode by tapping one of the buttons above!\n\n"
+        "🎯 *ATS Analysis* — upload resume + job description\n"
+        "✨ *Improve Resume* — just upload your resume\n\n"
+        "_Or type_ *signoff* _to exit._",
+        parse_mode=ParseMode.MARKDOWN
+    )
     return CHOOSING_MODE
 
 
@@ -451,14 +489,15 @@ async def handle_ask_to_chat(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return IN_CHAT_MODE
 
     else:
-        # User doesn't want to chat — end session
-        context.user_data.clear()
+        # Random text — remind them what to type
         await update.message.reply_text(
-            "✅ *Session complete!* You're all set. 🏆\n"
-            "Type *Hi DrCode* anytime to start a new session.",
+            "💡 *Heads up!*\n\n"
+            "To start a *Career Coach* conversation about your resume, type *start*\n"
+            "To sign off and exit, type *signoff*\n"
+            "To begin a brand new session, type *Hi DrCode*",
             parse_mode=ParseMode.MARKDOWN
         )
-        return ConversationHandler.END
+        return ASKING_TO_CHAT
 
 
 # ─────────────────────────────────────────────────────────────────────────────
