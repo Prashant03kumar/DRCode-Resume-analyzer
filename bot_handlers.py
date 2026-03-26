@@ -303,6 +303,7 @@ async def handle_jd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     if resume_part:
         context.user_data["improved_resume"] = resume_part
+        context.user_data["jd"] = jd_text          # save JD for chat context
         await update.message.reply_text("📎 *Generating your Optimized CV files...*",
                                         parse_mode=ParseMode.MARKDOWN)
         await send_resume_files(update, resume_part, resume_format, resume_filename, "Optimized")
@@ -310,12 +311,20 @@ async def handle_jd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         for i in range(0, len(full_text), 4000):
             await update.message.reply_text(full_text[i:i+4000])
 
-    context.user_data.clear()
+    # ── Offer Career Coach Chat (same as Improve mode) ────────────────────
     await update.message.reply_text(
-        "✅ *ATS Analysis complete!* Type *Hi DrCode* to start again. 🎯",
+        "─────────────────────────────\n"
+        "🤝 *Want to go deeper?*\n\n"
+        "I can be your personal *Career Coach* — help you with:\n"
+        "• Resume mistakes & improvements\n"
+        "• Skill gaps & what to learn next\n"
+        "• Project ideas for your profile\n"
+        "• Interview preparation tips\n"
+        "• Career guidance & roadmap\n\n"
+        "Type *start* to begin a conversation, or *Hi DrCode* to start over.",
         parse_mode=ParseMode.MARKDOWN
     )
-    return ConversationHandler.END
+    return ASKING_TO_CHAT
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -408,10 +417,13 @@ async def handle_ask_to_chat(update: Update, context: ContextTypes.DEFAULT_TYPE)
         resume_text    = context.user_data.get("resume", "No resume provided.")
         improved       = context.user_data.get("improved_resume", "")
 
-        # Build a Gemini chat session with resume context baked in
+        # Build a Gemini chat session with full context baked in
+        jd_text = context.user_data.get("jd", "")  # present only in ATS mode
+        jd_section = f"The Job Description they were targeting:\n{jd_text}\n\n" if jd_text else ""
         context_prompt = (
             f"The user's ORIGINAL resume:\n{resume_text}\n\n"
-            f"The IMPROVED resume we generated:\n{improved}\n\n"
+            f"{jd_section}"
+            f"The IMPROVED/OPTIMIZED resume we generated:\n{improved}\n\n"
             "Now enter career coach conversation mode. The user will ask you questions."
         )
         chat_config = types.GenerateContentConfig(
