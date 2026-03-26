@@ -1,0 +1,8 @@
+.env
+venv/
+__pycache__/
+*.pyc
+test_models.py
+test_output.pdf
+out.txt
+models.json
